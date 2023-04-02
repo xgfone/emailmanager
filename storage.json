@@ -1,0 +1,61 @@
+[
+    {
+        "Delay": 5,
+        "Timeout": 10,
+        "Interval": 15,
+        "Email": {
+            "Address": "imap.example.com:993",
+            "Username": "username@example.com",
+            "Password": "password",
+            "Number": 10,
+            "UseTls": true
+        },
+        "Handlers": [
+            {
+                "Type": "setread",
+                "Configs": {
+                    "Matchers": [
+                        {
+                            "Sender": "(zabbix|zentao)@example\\.com"
+                        }
+                    ]
+                }
+            },
+            {
+                "Type": "movebox",
+                "Configs": {
+                    "Mailbox": "monitor",
+                    "Matchers": [
+                        {
+                            "Sender": "zabbix@example\\.com",
+                            "Subject": ".*monitor.*"
+                        }
+                    ]
+                }
+            },
+            {
+                "Type": "movebox",
+                "Configs": {
+                    "Mailbox": "zentao",
+                    "Matchers": [
+                        {
+                            "Sender": "zentao@example\\.com"
+                        }
+                    ]
+                }
+            },
+            {
+                "Type": "filterread"
+            }
+        ],
+        "Notifiers": [
+            {
+                "Type": "feishuwebhook",
+                "Configs": {
+                    "GroupId": "2c57ce93-cd23-4713-819a-c439c19f74b3",
+                    "Secret": "0Aa7Veih8zOYrT3VcAOOy"
+                }
+            }
+        ]
+    }
+]
