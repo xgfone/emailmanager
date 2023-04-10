@@ -18,13 +18,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"sort"
 	"time"
 
 	"github.com/emersion/go-imap"
 	"github.com/emersion/go-imap/client"
 	"github.com/emersion/go-message/charset"
+	"github.com/xgfone/go-apiserver/log"
 	"github.com/xgfone/go-generics/slices"
 )
 
@@ -244,6 +244,14 @@ func fetchEmails(ctx context.Context, addr, username, password, mailbox string,
 	messages := make(chan *imap.Message, maxnum)
 
 	defer func() {
+		_emails := make([]Email, 0, len(emails))
+		for i := range emails {
+			if email := emails[i]; handleEmailMessage(&email, chains) {
+				_emails = append(_emails, email)
+			}
+		}
+
+		emails = _emails
 		sort.SliceStable(emails, func(i, j int) bool {
 			return emails[j].uid < emails[i].uid
 		})
@@ -275,11 +283,7 @@ func fetchEmails(ctx context.Context, addr, username, password, mailbox string,
 			if !ok {
 				return
 			}
-
-			email := newEmail(imapClient, mailbox, msg)
-			if handleEmailMessage(&email, chains) {
-				emails = append(emails, email)
-			}
+			emails = append(emails, newEmail(imapClient, mailbox, msg))
 		}
 	}
 }
@@ -288,9 +292,15 @@ func handleEmailMessage(e *Email, chains []Handler) bool {
 	for _, h := range chains {
 		next, err := h.Handle(e)
 		if err != nil {
-			log.Printf("fail to handle the email: handler=%s, mailbox=%s, uid=%d, sender=%s, subject=%s, err=%s",
-				h.Type(), e.mailbox, e.uid, e.Sender(), e.Subject, err.Error())
+			log.Error("fail to handle the email",
+				"handler", h.Type(), "mailbox", e.mailbox, "uid", e.uid,
+				"sender", e.Sender(), "subject", e.Subject, "err", err.Error())
 		} else if !next {
+			if !e.IsRead() {
+				log.Debug("ignore the email",
+					"handler", h.Type(), "mailbox", e.mailbox, "uid", e.uid,
+					"sender", e.Sender(), "subject", e.Subject)
+			}
 			return false
 		}
 	}

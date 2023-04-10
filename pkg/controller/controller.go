@@ -220,6 +220,7 @@ func (c *Controller) firstRun(ctx context.Context) (next bool) {
 func (c *Controller) CheckEmails(ctx context.Context) { c.checkEmails(ctx) }
 func (c *Controller) checkEmails(ctx context.Context) {
 	defer log.WrapPanic()
+	log.Info("start to check the emails")
 
 	config := c.loadConfig()
 	if config.Timeout > 0 {
@@ -234,6 +235,9 @@ func (c *Controller) checkEmails(ctx context.Context) {
 	if err != nil {
 		log.Error("fail to fetch emails", "addr", config.Email.Addr,
 			"email", config.Email.Username, "mailbox", email.Inbox, "err", err)
+		return
+	} else if len(emails) == 0 {
+		log.Debug("no emails to be sent")
 		return
 	}
 
