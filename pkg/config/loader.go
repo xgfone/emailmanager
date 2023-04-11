@@ -44,7 +44,7 @@ func (l fileLoader) LoadController() (controlers []Controller, err error) {
 	err = json.Unmarshal(data, &controlers)
 	if err == nil {
 		for _, c := range controlers {
-			err = structs.Reflect(nil, &c)
+			err = structs.Reflect(&c)
 			if err != nil {
 				return
 			}

@@ -40,7 +40,7 @@ func init() {
 		if err := binder.BindStructToMap(&config, "json", configs); err != nil {
 			return nil, err
 		}
-		if err := structs.Reflect(nil, config); err != nil {
+		if err := structs.Reflect(config); err != nil {
 			return nil, err
 		}
 		return NewWebhookNotifier(config.GroupID, config.Secret), nil
