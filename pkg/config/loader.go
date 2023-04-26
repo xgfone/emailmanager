@@ -16,7 +16,7 @@ package config
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
 
 	"github.com/xgfone/go-structs"
 )
@@ -36,7 +36,7 @@ type fileLoader struct {
 }
 
 func (l fileLoader) LoadController() (controlers []Controller, err error) {
-	data, err := ioutil.ReadFile(l.filepath)
+	data, err := os.ReadFile(l.filepath)
 	if err != nil {
 		return
 	}
