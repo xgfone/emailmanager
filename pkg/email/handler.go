@@ -17,6 +17,7 @@ package email
 import (
 	"fmt"
 	"regexp"
+	"time"
 
 	"github.com/xgfone/go-apiserver/log"
 	"github.com/xgfone/go-binder"
@@ -82,6 +83,10 @@ type matcher struct {
 }
 
 func init() {
+	RegisterHandlerBuilder(FilterAlarmedHandler().Type(), func(configs map[string]interface{}) (Handler, error) {
+		return FilterAlarmedHandler(), nil
+	})
+
 	RegisterHandlerBuilder(FilterReadHandler().Type(), func(map[string]interface{}) (Handler, error) {
 		return FilterReadHandler(), nil
 	})
@@ -207,6 +212,20 @@ func MoveBoxHandler(mailbox string, match func(sender, subject string) bool) Han
 		}
 
 		next = true
+		return
+	})
+}
+
+// FilterAlarmedHandler returns an email handler to filter the alarmed email
+// based on the memory.
+func FilterAlarmedHandler() Handler {
+	caches := make(map[string]struct{}, 256)
+	return NewHandler("filteralarmed", func(e *Email) (next bool, err error) {
+		key := fmt.Sprintf("%d_%s", e.UID(), e.Date().Format(time.RFC3339))
+		_, ok := caches[key]
+		if next = !ok; next {
+			caches[key] = struct{}{}
+		}
 		return
 	})
 }
