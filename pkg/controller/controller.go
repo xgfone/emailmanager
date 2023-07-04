@@ -196,7 +196,13 @@ func (c *Controller) Run(ctx context.Context, interval time.Duration) {
 			return
 
 		case <-ticker.C:
-			c.checkEmails(ctx)
+			for c.checkEmails(ctx) {
+				select {
+				case <-ctx.Done():
+					return
+				default:
+				}
+			}
 		}
 	}
 }
@@ -217,8 +223,8 @@ func (c *Controller) firstRun(ctx context.Context) (next bool) {
 }
 
 // CheckEmails checks all the emails immediately.
-func (c *Controller) CheckEmails(ctx context.Context) { c.checkEmails(ctx) }
-func (c *Controller) checkEmails(ctx context.Context) {
+func (c *Controller) CheckEmails(ctx context.Context) (goon bool) { return c.checkEmails(ctx) }
+func (c *Controller) checkEmails(ctx context.Context) (goon bool) {
 	defer log.WrapPanic()
 	log.Info("start to check the emails")
 
@@ -251,4 +257,6 @@ func (c *Controller) checkEmails(ctx context.Context) {
 			break
 		}
 	}
+
+	return true
 }
