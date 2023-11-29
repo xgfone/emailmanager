@@ -26,6 +26,6 @@ var (
 )
 
 func main() {
-	goapp.Init("")
+	goapp.Init()
 	run(config.FileLoader(filestoragepath.Get()))
 }

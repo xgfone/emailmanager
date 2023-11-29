@@ -16,10 +16,10 @@ package email
 
 import (
 	"context"
+	"slices"
 
 	"github.com/emersion/go-imap"
 	"github.com/emersion/go-imap/client"
-	"github.com/xgfone/go-generics/slices"
 )
 
 // Mailbox represents a mailbox information.

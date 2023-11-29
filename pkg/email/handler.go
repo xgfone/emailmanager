@@ -16,10 +16,10 @@ package email
 
 import (
 	"fmt"
+	"log/slog"
 	"regexp"
 	"time"
 
-	"github.com/xgfone/go-apiserver/log"
 	"github.com/xgfone/go-binder"
 )
 
@@ -183,7 +183,7 @@ func SetReadHandler(match func(sender, subject string) bool) Handler {
 	return NewHandler("setread", func(e *Email) (next bool, err error) {
 		if !e.IsRead() && match(e.Sender(), e.Subject) {
 			err = e.SetRead()
-			log.Info("set email to read", "mailbox", e.Mailbox(),
+			slog.Info("set email to read", "mailbox", e.Mailbox(),
 				"uid", e.uid, "sender", e.Sender(), "subject", e.Subject,
 				"date", e.Date(), "err", err)
 		}
@@ -206,7 +206,7 @@ func MoveBoxHandler(mailbox string, match func(sender, subject string) bool) Han
 		srcbox := e.Mailbox()
 		if match(e.Sender(), e.Subject) {
 			err = e.Move(mailbox)
-			log.Info("move email", "srcmailbox", srcbox, "newmailbox", mailbox,
+			slog.Info("move email", "srcmailbox", srcbox, "newmailbox", mailbox,
 				"uid", e.uid, "sender", e.Sender(), "subject", e.Subject,
 				"date", e.Date(), "err", err)
 		}

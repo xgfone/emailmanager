@@ -18,21 +18,24 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"reflect"
 	"sync"
 	"time"
 
+	_ "github.com/xgfone/emailmanager/pkg/notice/feishu"
+
 	"github.com/xgfone/emailmanager/pkg/config"
 	"github.com/xgfone/emailmanager/pkg/controller"
-	_ "github.com/xgfone/emailmanager/pkg/notice/feishu"
-	"github.com/xgfone/go-apiserver/log"
 	"github.com/xgfone/go-atexit"
+	"github.com/xgfone/go-defaults"
 )
 
 func run(loader config.Loader) {
 	m, err := newManager(loader)
 	if err != nil {
-		log.Fatal("fail to new manager", "err", err)
+		slog.Error("fail to new manager", "err", err)
+		defaults.Exit(1)
 	}
 
 	m.Start(atexit.Context())
@@ -49,6 +52,9 @@ func (c *ctrl) Run(ctx context.Context, interval time.Duration) {
 	if c.cancel == nil {
 		ctx, c.cancel = context.WithCancel(ctx)
 		c.controller.Run(ctx, interval)
+		slog.Info("controller has stopped")
+	} else {
+		slog.Warn("controller has been started")
 	}
 }
 
@@ -98,7 +104,10 @@ func (m *manager) sync() (err error) {
 					_err = fmt.Errorf("fail to build controller options for %s: %w", c.Email.Address, _err)
 					err = joinErrors(err, _err)
 				} else {
-					ctrl.controller.Reconfigure(options...)
+					_err = ctrl.controller.Reconfigure(options...)
+					if _err != nil {
+						err = joinErrors(err, _err)
+					}
 				}
 			}
 		} else {

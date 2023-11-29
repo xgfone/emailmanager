@@ -18,14 +18,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
+	"slices"
 	"sort"
 	"time"
 
 	"github.com/emersion/go-imap"
 	"github.com/emersion/go-imap/client"
 	"github.com/emersion/go-message/charset"
-	"github.com/xgfone/go-apiserver/log"
-	"github.com/xgfone/go-generics/slices"
 )
 
 // Predefine some mailboxes.
@@ -292,12 +292,12 @@ func handleEmailMessage(e *Email, chains []Handler) bool {
 	for _, h := range chains {
 		next, err := h.Handle(e)
 		if err != nil {
-			log.Error("fail to handle the email",
+			slog.Error("fail to handle the email",
 				"handler", h.Type(), "mailbox", e.mailbox, "uid", e.uid,
 				"sender", e.Sender(), "subject", e.Subject, "err", err.Error())
 		} else if !next {
 			if !e.IsRead() {
-				log.Debug("ignore the email",
+				slog.Debug("ignore the email",
 					"handler", h.Type(), "mailbox", e.mailbox, "uid", e.uid,
 					"sender", e.Sender(), "subject", e.Subject)
 			}

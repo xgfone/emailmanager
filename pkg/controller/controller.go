@@ -19,13 +19,13 @@ package controller
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"sync/atomic"
 	"time"
 
 	"github.com/xgfone/emailmanager/pkg/email"
 	"github.com/xgfone/emailmanager/pkg/notice"
-	"github.com/xgfone/go-apiserver/helper"
-	"github.com/xgfone/go-apiserver/log"
+	"github.com/xgfone/go-defaults"
 )
 
 // EmailOption returns an option about email.
@@ -214,7 +214,12 @@ func (c *Controller) firstRun(ctx context.Context) (next bool) {
 		select {
 		case <-timer.C:
 		case <-ctx.Done():
-			helper.StopTimer(timer)
+			if !timer.Stop() {
+				select {
+				case <-timer.C:
+				default:
+				}
+			}
 			return
 		}
 	}
@@ -225,8 +230,9 @@ func (c *Controller) firstRun(ctx context.Context) (next bool) {
 // CheckEmails checks all the emails immediately.
 func (c *Controller) CheckEmails(ctx context.Context) (goon bool) { return c.checkEmails(ctx) }
 func (c *Controller) checkEmails(ctx context.Context) (goon bool) {
-	defer log.WrapPanic()
-	log.Info("start to check the emails")
+	defer defaults.Recover(ctx)
+	defer slog.Info("end to check the emails")
+	slog.Info("start to check the emails")
 
 	config := c.loadConfig()
 	if config.Timeout > 0 {
@@ -239,20 +245,20 @@ func (c *Controller) checkEmails(ctx context.Context) (goon bool) {
 		config.Email.Username, config.Email.Password, email.Inbox,
 		config.Email.TLS, config.Email.Num, config.Handlers...)
 	if err != nil {
-		log.Error("fail to fetch emails", "addr", config.Email.Addr,
+		slog.Error("fail to fetch emails", "addr", config.Email.Addr,
 			"email", config.Email.Username, "mailbox", email.Inbox, "err", err)
 		return
 	} else if len(emails) == 0 {
-		log.Debug("no emails to be sent")
+		slog.Debug("no emails to be sent")
 		return
 	}
 
 	for _, notifier := range config.Notifiers {
 		if err := notifier.Notify(ctx, emails...); err != nil {
-			log.Error("fail to send notice", "email", config.Email.Username,
+			slog.Error("fail to send notice", "email", config.Email.Username,
 				"notifier", notifier.String(), "err", err)
 		} else {
-			log.Info("send new email notice", "email", config.Email.Username,
+			slog.Info("send new email notice", "email", config.Email.Username,
 				"notifier", notifier.String())
 			break
 		}
