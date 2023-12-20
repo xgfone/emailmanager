@@ -47,11 +47,13 @@ type Email struct {
 	Password string `validate:"required"`
 	Number   uint32
 	UseTLS   bool `json:"UseTls"`
+
+	SkipTLSVerify bool `validate:"SkipTlsVerify"`
 }
 
 // ControllerOptoin converts itself to the controller option.
 func (e Email) ControllerOptoin() controller.Option {
-	return controller.EmailOption(e.Address, e.Username, e.Password, e.UseTLS, e.Number)
+	return controller.EmailOption(e.Address, e.Username, e.Password, e.UseTLS, e.SkipTLSVerify, e.Number)
 }
 
 // Controller is the controller config.

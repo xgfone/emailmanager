@@ -16,6 +16,7 @@ package email
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -186,12 +187,12 @@ func (m *Email) Move(box string) (err error) {
 // If mailbox is eqial to "", use Inbox instead.
 // If maxnum is equal 0, use 100 instead.
 func FetchEmails(ctx context.Context, addr, username, password, mailbox string,
-	tls bool, maxnum uint32, chains ...Handler) (emails []Email, err error) {
-	return fetchEmails(ctx, addr, username, password, mailbox, tls, false, maxnum, chains...)
+	tlsconfig *tls.Config, maxnum uint32, chains ...Handler) (emails []Email, err error) {
+	return fetchEmails(ctx, addr, username, password, mailbox, tlsconfig, false, maxnum, chains...)
 }
 
 func fetchEmails(ctx context.Context, addr, username, password, mailbox string,
-	tls, body bool, maxnum uint32, chains ...Handler) (emails []Email, err error) {
+	tlsconfig *tls.Config, body bool, maxnum uint32, chains ...Handler) (emails []Email, err error) {
 
 	if addr == "" {
 		panic("mail server address must not be empty")
@@ -204,8 +205,8 @@ func fetchEmails(ctx context.Context, addr, username, password, mailbox string,
 	}
 
 	var imapClient *client.Client
-	if tls {
-		imapClient, err = client.DialTLS(addr, nil)
+	if tlsconfig != nil {
+		imapClient, err = client.DialTLS(addr, tlsconfig)
 	} else {
 		imapClient, err = client.Dial(addr)
 	}

@@ -18,6 +18,7 @@ package controller
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"log/slog"
 	"sync/atomic"
@@ -32,17 +33,23 @@ import (
 //
 // Required: addr, username, password.
 // Optional: tls, num(default: 100).
-func EmailOption(addr, username, password string, tls bool, num uint32) Option {
+func EmailOption(addr, username, password string, enableTLS, skipTLSVerify bool, num uint32) Option {
 	if num <= 0 {
 		num = 100
 	}
+
+	var tlsconf *tls.Config
+	if enableTLS {
+		tlsconf = &tls.Config{InsecureSkipVerify: skipTLSVerify}
+	}
+
 	return func(c *config) {
 		c.Email = emailConfig{
-			TLS:      tls,
 			Num:      num,
 			Addr:     addr,
 			Username: username,
 			Password: password,
+			TLSConf:  tlsconf,
 		}
 	}
 }
@@ -79,11 +86,11 @@ func IntervalOption(interval time.Duration) Option {
 }
 
 type emailConfig struct {
-	TLS      bool
 	Num      uint32
 	Addr     string
 	Username string
 	Password string
+	TLSConf  *tls.Config
 }
 
 func (c *emailConfig) check() error {
@@ -237,7 +244,7 @@ func (c *Controller) checkEmails(ctx context.Context) {
 
 	emails, err := email.FetchEmails(ctx, config.Email.Addr,
 		config.Email.Username, config.Email.Password, email.Inbox,
-		config.Email.TLS, config.Email.Num, config.Handlers...)
+		config.Email.TLSConf, config.Email.Num, config.Handlers...)
 	if err != nil {
 		slog.Error("fail to fetch emails", "addr", config.Email.Addr,
 			"email", config.Email.Username, "mailbox", email.Inbox, "err", err)
