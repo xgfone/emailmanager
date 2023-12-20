@@ -15,6 +15,7 @@
 package config
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
 
@@ -41,7 +42,7 @@ func (l fileLoader) LoadController() (controlers []Controller, err error) {
 		return
 	}
 
-	err = json.Unmarshal(data, &controlers)
+	err = json.Unmarshal(removeLineComments(data), &controlers)
 	if err == nil {
 		for _, c := range controlers {
 			err = structs.Reflect(&c)
@@ -51,4 +52,46 @@ func (l fileLoader) LoadController() (controlers []Controller, err error) {
 		}
 	}
 	return
+}
+
+var (
+	doublequote = []byte{'"'}
+	jsonComment = []byte("//")
+)
+
+func removeLineComments(data []byte) []byte {
+	result := make([]byte, 0, len(data))
+	for len(data) > 0 {
+		var line []byte
+		if index := bytes.IndexByte(data, '\n'); index == -1 {
+			line = data
+			data = nil
+		} else {
+			line = data[:index]
+			data = data[index+1:]
+		}
+
+		orig := line
+		line = bytes.TrimLeft(line, " \t")
+		if len(line) == 0 || bytes.HasPrefix(line, jsonComment) {
+			continue
+		}
+
+		// Line Suffix Comment
+		if index := bytes.Index(orig, jsonComment); index == -1 {
+			result = append(result, orig...)
+		} else if bytes.IndexByte(orig[index:], '"') == -1 {
+			result = append(result, bytes.TrimRight(orig[:index], " \t")...)
+		} else {
+			if bytes.Count(orig[:index], doublequote)%2 == 0 {
+				/* The case: ... "...." ... // the trailling comment containing ". */
+				result = append(result, bytes.TrimRight(orig[:index], " \t")...)
+			} else {
+				/* "//" is contained in a string. */
+				result = append(result, orig...)
+			}
+		}
+		result = append(result, '\n')
+	}
+	return result
 }
