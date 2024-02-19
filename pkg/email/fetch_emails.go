@@ -187,12 +187,13 @@ func (m *Email) Move(box string) (err error) {
 // If mailbox is eqial to "", use Inbox instead.
 // If maxnum is equal 0, use 100 instead.
 func FetchEmails(ctx context.Context, addr, username, password, mailbox string,
-	tlsconfig *tls.Config, maxnum uint32, chains ...Handler) (emails []Email, err error) {
+	tlsconfig *tls.Config, maxnum uint32, chains ...Handler) (emails []Email, goon bool, err error) {
 	return fetchEmails(ctx, addr, username, password, mailbox, tlsconfig, false, maxnum, chains...)
 }
 
 func fetchEmails(ctx context.Context, addr, username, password, mailbox string,
-	tlsconfig *tls.Config, body bool, maxnum uint32, chains ...Handler) (emails []Email, err error) {
+	tlsconfig *tls.Config, body bool, maxnum uint32, chains ...Handler) (
+	emails []Email, goon bool, err error) {
 
 	if addr == "" {
 		panic("mail server address must not be empty")
@@ -245,6 +246,13 @@ func fetchEmails(ctx context.Context, addr, username, password, mailbox string,
 	messages := make(chan *imap.Message, maxnum)
 
 	defer func() {
+		for _, email := range emails {
+			if !email.IsRead() {
+				goon = true
+				break
+			}
+		}
+
 		_emails := make([]Email, 0, len(emails))
 		for i := range emails {
 			if email := emails[i]; handleEmailMessage(&email, chains) {

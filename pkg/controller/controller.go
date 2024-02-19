@@ -203,7 +203,7 @@ func (c *Controller) Run(ctx context.Context, interval time.Duration) {
 			return
 
 		case <-ticker.C:
-			c.checkEmails(ctx)
+			c.CheckEmails(ctx)
 		}
 	}
 }
@@ -224,13 +224,17 @@ func (c *Controller) firstRun(ctx context.Context) (next bool) {
 			return
 		}
 	}
-	c.checkEmails(ctx)
+	c.CheckEmails(ctx)
 	return true
 }
 
 // CheckEmails checks all the emails immediately.
-func (c *Controller) CheckEmails(ctx context.Context) { c.checkEmails(ctx) }
-func (c *Controller) checkEmails(ctx context.Context) {
+func (c *Controller) CheckEmails(ctx context.Context) {
+	for c.checkEmails(ctx) {
+	}
+}
+
+func (c *Controller) checkEmails(ctx context.Context) (goon bool) {
 	defer defaults.Recover(ctx)
 	defer slog.Info("end to check the emails")
 	slog.Info("start to check the emails")
@@ -242,7 +246,7 @@ func (c *Controller) checkEmails(ctx context.Context) {
 		defer cancel()
 	}
 
-	emails, err := email.FetchEmails(ctx, config.Email.Addr,
+	emails, goon, err := email.FetchEmails(ctx, config.Email.Addr,
 		config.Email.Username, config.Email.Password, email.Inbox,
 		config.Email.TLSConf, config.Email.Num, config.Handlers...)
 	if err != nil {
@@ -264,4 +268,6 @@ func (c *Controller) checkEmails(ctx context.Context) {
 			break
 		}
 	}
+
+	return
 }
